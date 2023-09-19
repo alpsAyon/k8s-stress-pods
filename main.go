@@ -86,21 +86,19 @@ func main() {
 		}
 
 		// Stress the pod (adjust the number of iterations as needed)
-		for i := 0; i < 5; i++ {
-			// Get resource usage metrics
-			pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-			if err != nil {
-				klog.Errorf("Error getting pod: %v", err)
-				continue
-			}
-
-			// Fetch and calculate container metrics
-			for _, containerMetric := range pod.Status.ContainerStatuses {
-				containerMetrics, err := metricsClient.MetricsV1beta1().PodMetricses(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-				if err != nil {
-					klog.Errorf("Error getting pod metrics: %v", err)
-					continue
-				}
+		fmt.Printf("Stressing pod: %s\n", podName)
+		// The following stress command will launch 4 CPU stressors for 60 seconds
+		cmd := exec.Command("kubectl", "exec", podName, "-n", namespace, "--", "stress-ng", "--cpu", "4", "--timeout", "60s")
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return
+	}
+		fmt.Printf("Result for %s: %s\n", podName, out.String())
 
 				// Filter metrics for the specific container
 				var containerUsage v1.ResourceList
